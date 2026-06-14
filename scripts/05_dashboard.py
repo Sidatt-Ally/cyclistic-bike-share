@@ -62,13 +62,13 @@ top10_casual  = (df[(df["start_station_name"].notna()) & (df["member_casual"]=="
                  .groupby("start_station_name")
                  .size().reset_index(name="total_rides")
                  .sort_values("total_rides", ascending=False)
-                 .head(10))
+                 .head(10).reset_index(drop=True))
 
 top10_member  = (df[(df["start_station_name"].notna()) & (df["member_casual"]=="member")]
                  .groupby("start_station_name")
                  .size().reset_index(name="total_rides")
                  .sort_values("total_rides", ascending=False)
-                 .head(10))
+                 .head(10).reset_index(drop=True))
 
 avg_dow = (df.groupby(["day_of_week","member_casual"])["ride_length"]
              .mean().reset_index(name="avg_length"))
@@ -171,10 +171,10 @@ fig5 = make_subplots(rows=1, cols=2,
                      specs=[[{"type":"pie"}, {"type":"pie"}]])
 colors_pie = [COLOR_MEMBER, COLOR_CASUAL, "#FBBC04", "#EA4335"]
 for i, user_type in enumerate(["member", "casual"], 1):
-    sub = bikes[bikes["member_casual"] == user_type]
+    sub = bikes[bikes["member_casual"] == user_type].reset_index(drop=True)
     fig5.add_trace(go.Pie(
-        labels=sub["rideable_type"],
-        values=sub["total_rides"],
+        labels=list(sub["rideable_type"]),
+        values=list(sub["total_rides"]),
         name=user_type.capitalize(),
         marker_colors=colors_pie,
         hole=0.45,
@@ -186,11 +186,11 @@ fig5.update_layout(showlegend=True)
 
 # Fig 6 — Top 10 stations casual (cible marketing)
 fig6 = go.Figure(go.Bar(
-    x=top10_casual["total_rides"],
-    y=top10_casual["start_station_name"],
+    x=list(top10_casual["total_rides"]),
+    y=list(top10_casual["start_station_name"]),
     orientation="h",
     marker_color=COLOR_CASUAL,
-    text=top10_casual["total_rides"].apply(lambda x: f"{x:,}"),
+    text=[f"{v:,}" for v in top10_casual["total_rides"]],
     textposition="outside",
     hovertemplate="%{y}<br>%{x:,} trajets casual<extra></extra>"
 ))
