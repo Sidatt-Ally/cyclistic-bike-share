@@ -58,11 +58,21 @@ bikes      = (df[df["rideable_type"] != "unknown"]
               .groupby(["member_casual","rideable_type"])
               .size().reset_index(name="total_rides"))
 
-top10      = (df[df["start_station_name"].notna()]
-              .groupby("start_station_name")
-              .size().reset_index(name="total_rides")
-              .sort_values("total_rides", ascending=False)
-              .head(10))
+top10_casual  = (df[(df["start_station_name"].notna()) & (df["member_casual"]=="casual")]
+                 .groupby("start_station_name")
+                 .size().reset_index(name="total_rides")
+                 .sort_values("total_rides", ascending=False)
+                 .head(10))
+
+top10_member  = (df[(df["start_station_name"].notna()) & (df["member_casual"]=="member")]
+                 .groupby("start_station_name")
+                 .size().reset_index(name="total_rides")
+                 .sort_values("total_rides", ascending=False)
+                 .head(10))
+
+avg_dow = (df.groupby(["day_of_week","member_casual"])["ride_length"]
+             .mean().reset_index(name="avg_length"))
+avg_dow["day_name"] = avg_dow["day_of_week"].map(DOW_NAMES)
 
 hourly     = (df.groupby(["hour_of_day","member_casual"])
                .size().reset_index(name="total_rides"))
@@ -130,7 +140,7 @@ for user_type in ["member", "casual"]:
     sub = dow[dow["member_casual"] == user_type].copy()
     sub = sub.set_index("day_name").reindex(dow_order).reset_index()
     fig3.add_trace(go.Bar(
-        x=sub["day_name"], y=sub["total_rides"],
+        x=list(sub["day_name"]), y=list(sub["total_rides"]),
         name=user_type.capitalize(),
         marker_color=COLOR_MAP[user_type],
         hovertemplate="%{x}<br>%{y:,} trajets<extra></extra>"
@@ -142,9 +152,9 @@ fig3.update_yaxes(title_text="Nombre de trajets")
 # Fig 4 — Trajets par mois (line)
 fig4 = go.Figure()
 for user_type in ["member", "casual"]:
-    sub = monthly[monthly["member_casual"] == user_type]
+    sub = monthly[monthly["member_casual"] == user_type].reset_index(drop=True)
     fig4.add_trace(go.Scatter(
-        x=sub["period"], y=sub["total_rides"],
+        x=list(sub["period"]), y=list(sub["total_rides"]),
         mode="lines+markers",
         name=user_type.capitalize(),
         line=dict(color=COLOR_MAP[user_type], width=3),
@@ -174,26 +184,41 @@ for i, user_type in enumerate(["member", "casual"], 1):
 fig5 = styled_fig(fig5, "Types de vélos utilisés")
 fig5.update_layout(showlegend=True)
 
-# Fig 6 — Top 10 stations
+# Fig 6 — Top 10 stations casual (cible marketing)
 fig6 = go.Figure(go.Bar(
-    x=top10["total_rides"],
-    y=top10["start_station_name"],
+    x=top10_casual["total_rides"],
+    y=top10_casual["start_station_name"],
     orientation="h",
-    marker_color=COLOR_MEMBER,
-    text=top10["total_rides"].apply(lambda x: f"{x:,}"),
+    marker_color=COLOR_CASUAL,
+    text=top10_casual["total_rides"].apply(lambda x: f"{x:,}"),
     textposition="outside",
-    hovertemplate="%{y}<br>%{x:,} trajets<extra></extra>"
+    hovertemplate="%{y}<br>%{x:,} trajets casual<extra></extra>"
 ))
-fig6 = styled_fig(fig6, "Top 10 stations de départ")
+fig6 = styled_fig(fig6, "Top 10 stations — Casual riders (cibles marketing)")
 fig6.update_layout(yaxis=dict(autorange="reversed"))
-fig6.update_xaxes(title_text="Nombre de trajets")
+fig6.update_xaxes(title_text="Nombre de trajets casual")
+
+# Fig 8 — Durée moyenne par jour de la semaine
+fig8 = go.Figure()
+for user_type in ["member", "casual"]:
+    sub = avg_dow[avg_dow["member_casual"] == user_type].copy()
+    sub = sub.set_index("day_name").reindex(dow_order).reset_index()
+    fig8.add_trace(go.Bar(
+        x=list(sub["day_name"]), y=list(sub["avg_length"].round(1)),
+        name=user_type.capitalize(),
+        marker_color=COLOR_MAP[user_type],
+        hovertemplate="%{x}<br>Durée moy.: %{y:.1f} min<extra></extra>"
+    ))
+fig8 = styled_fig(fig8, "Durée moyenne des trajets par jour de la semaine")
+fig8.update_layout(barmode="group")
+fig8.update_yaxes(title_text="Minutes (moyenne)")
 
 # Fig 7 — Trajets par heure
 fig7 = go.Figure()
 for user_type in ["member", "casual"]:
-    sub = hourly[hourly["member_casual"] == user_type]
+    sub = hourly[hourly["member_casual"] == user_type].reset_index(drop=True)
     fig7.add_trace(go.Scatter(
-        x=sub["hour_of_day"], y=sub["total_rides"],
+        x=list(sub["hour_of_day"]), y=list(sub["total_rides"]),
         mode="lines+markers",
         name=user_type.capitalize(),
         line=dict(color=COLOR_MAP[user_type], width=2.5),
@@ -218,6 +243,7 @@ divs = {
     "fig5": fig_to_div(fig5, "fig5"),
     "fig6": fig_to_div(fig6, "fig6"),
     "fig7": fig_to_div(fig7, "fig7"),
+    "fig8": fig_to_div(fig8, "fig8"),
 }
 
 # ── HTML complet ───────────────────────────────────────────────────────────────
@@ -262,20 +288,6 @@ html = f"""<!DOCTYPE html>
   .kpi-casual {{ color: #34A853; }}
   .kpi-total  {{ color: #202124; }}
 
-  /* Filtres */
-  .filters {{
-    padding: 20px 48px 0; display: flex; align-items: center; gap: 12px;
-  }}
-  .filter-label {{ font-size: 13px; color: #5F6368; font-weight: 500; }}
-  .filter-btn {{
-    padding: 8px 20px; border-radius: 20px; border: 2px solid #E8EAED;
-    background: white; cursor: pointer; font-size: 13px; font-weight: 500;
-    transition: all 0.2s; color: #5F6368;
-  }}
-  .filter-btn:hover  {{ border-color: #1A73E8; color: #1A73E8; }}
-  .filter-btn.active {{ background: #1A73E8; color: white; border-color: #1A73E8; }}
-  .filter-btn.casual-active {{ background: #34A853; color: white; border-color: #34A853; }}
-
   /* Grille de graphiques */
   .section-title {{
     padding: 28px 48px 0; font-size: 18px; font-weight: 600; color: #202124;
@@ -287,9 +299,9 @@ html = f"""<!DOCTYPE html>
   .grid-1 {{ grid-template-columns: 1fr; }}
   .chart-card {{
     background: white; border-radius: 12px; padding: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); min-height: 420px;
   }}
-  .chart-card .plotly-graph-div {{ width: 100% !important; }}
+  .chart-card .plotly-graph-div {{ width: 100% !important; min-height: 400px; }}
 
   /* Footer */
   .footer {{
@@ -364,7 +376,13 @@ html = f"""<!DOCTYPE html>
 <!-- SECTION 3 : COMPORTEMENT -->
 <div class="section-title">Comportement & Équipement</div>
 <div class="charts-grid grid-2">
+  <div class="chart-card">{divs["fig8"]}</div>
   <div class="chart-card">{divs["fig5"]}</div>
+</div>
+
+<!-- SECTION 4 : STATIONS -->
+<div class="section-title">Stations</div>
+<div class="charts-grid grid-1">
   <div class="chart-card">{divs["fig6"]}</div>
 </div>
 
