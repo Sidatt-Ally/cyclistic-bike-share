@@ -1,0 +1,15 @@
+# Données brutes (trop volumineuses pour GitHub)
+data/raw/
+data/processed/*.csv
+data/processed/*.xlsx
+
+# Fichiers temporaires Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
