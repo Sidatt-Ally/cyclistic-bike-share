@@ -3,6 +3,9 @@ data/raw/
 data/processed/*.csv
 data/processed/*.xlsx
 
+# Config outils internes (non projet)
+.claude/
+
 # Fichiers temporaires Python
 __pycache__/
 *.pyc
