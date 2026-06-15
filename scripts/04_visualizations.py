@@ -140,44 +140,47 @@ bikes = (df.groupby(["member_casual","rideable_type"])
 bikes = bikes[bikes["rideable_type"] != "unknown"]
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-bike_palette = ["#1A73E8","#34A853","#FBBC04","#EA4335"]
+# Palette alignée sur le dashboard : orange / violet / or (distinct de bleu membre et vert casual)
+bike_palette = ["#FF8C42", "#6C63FF", "#F7C948"]
 for ax, user_type in zip(axes, ["member","casual"]):
-    subset = bikes[bikes["member_casual"] == user_type]
+    subset = bikes[bikes["member_casual"] == user_type].reset_index(drop=True)
     wedges, texts, autotexts = ax.pie(
         subset["total_rides"],
-        labels=subset["rideable_type"],
+        labels=None,
         autopct="%1.1f%%",
         colors=bike_palette[:len(subset)],
         startangle=90,
-        pctdistance=0.75,
+        pctdistance=0.78,
         wedgeprops=dict(width=0.6, edgecolor="white", linewidth=2)
     )
     for at in autotexts:
         at.set_fontsize(11)
         at.set_fontweight("bold")
     ax.set_title(f"Types de vélos — {user_type.capitalize()}", fontsize=13, fontweight="bold")
+    ax.legend(subset["rideable_type"], loc="lower center",
+              bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=9, frameon=False)
 fig.suptitle("Types de vélos utilisés", fontsize=15, fontweight="bold", y=1.02)
 fig.tight_layout()
 save(fig, "05_bike_types.png")
 
 
-# ── Fig 6 — Top 10 stations les plus populaires ───────────────────────────────
-print("Fig 6 — Top 10 stations")
-top_stations = (df[df["start_station_name"].notna()]
-                .groupby("start_station_name")
-                .size().reset_index(name="total_rides")
-                .sort_values("total_rides", ascending=False)
-                .head(10))
+# ── Fig 6 — Top 10 stations casual (cibles marketing) ────────────────────────
+print("Fig 6 — Top 10 stations casual")
+top_casual = (df[(df["start_station_name"].notna()) & (df["member_casual"] == "casual")]
+              .groupby("start_station_name")
+              .size().reset_index(name="total_rides")
+              .sort_values("total_rides", ascending=False)
+              .head(10).reset_index(drop=True))
 
 fig, ax = plt.subplots(figsize=(10, 7))
-colors = sns.color_palette("Blues_d", len(top_stations))[::-1]
-bars = ax.barh(top_stations["start_station_name"], top_stations["total_rides"],
-               color=colors, edgecolor="white")
-for bar in bars:
+bars = ax.barh(top_casual["start_station_name"], top_casual["total_rides"],
+               color=PALETTE["casual"], edgecolor="white")
+for bar, val in zip(bars, top_casual["total_rides"]):
     ax.text(bar.get_width() + 200, bar.get_y() + bar.get_height()/2,
-            f"{int(bar.get_width()/1000)}k", va="center", fontsize=10)
-ax.set_title("Top 10 stations de départ (tous utilisateurs)", fontsize=15, fontweight="bold", pad=12)
-ax.set_xlabel("Nombre de trajets", fontsize=12)
+            f"{val:,}", va="center", fontsize=10)
+ax.set_title("Top 10 stations de départ — Casual riders\n(cibles prioritaires pour la conversion)",
+             fontsize=14, fontweight="bold", pad=12)
+ax.set_xlabel("Nombre de trajets casual", fontsize=12)
 ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x/1e3:.0f}k"))
 ax.invert_yaxis()
 fig.tight_layout()

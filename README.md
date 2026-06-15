@@ -86,12 +86,11 @@ Les membres restent relativement actifs toute l'année (556k trajets en hiver).
 
 ---
 
-### 6. Top 10 Stations de départ
+### 6. Top 10 Stations de départ — Casual riders (cibles marketing)
 
-Les casual se concentrent sur les **stations touristiques** (Lakefront, Navy Pier, Millennium Park).  
-Les membres utilisent les stations de **quartiers résidentiels et de bureaux**.
+Les casual riders se concentrent sur les **stations touristiques** (Lakefront, Navy Pier, Millennium Park) — ces stations sont les cibles prioritaires pour les campagnes de conversion.
 
-![Top 10 stations](figures/06_top10_stations.png)
+![Top 10 stations casual](figures/06_top10_stations.png)
 
 ---
 

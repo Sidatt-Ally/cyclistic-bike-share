@@ -142,7 +142,7 @@ Tous les graphiques sont disponibles dans le dossier `figures/` :
 | `03_rides_by_dow.png` | Trajets par jour de la semaine |
 | `04_rides_by_month.png` | Évolution mensuelle |
 | `05_bike_types.png` | Types de vélos utilisés |
-| `06_top10_stations.png` | Top 10 stations de départ |
+| `06_top10_stations.png` | Top 10 stations de départ — Casual riders (cibles marketing) |
 | `07_rides_by_hour.png` | Répartition par heure |
 | `08_avg_length_by_dow.png` | Durée moyenne par jour |
 

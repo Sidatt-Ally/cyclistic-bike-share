@@ -168,8 +168,10 @@ fig4.update_yaxes(title_text="Nombre de trajets")
 # Fig 5 — Types de vélos
 fig5 = make_subplots(rows=1, cols=2,
                      subplot_titles=["Membres", "Casual"],
-                     specs=[[{"type":"pie"}, {"type":"pie"}]])
-colors_pie = [COLOR_MEMBER, COLOR_CASUAL, "#FBBC04", "#EA4335"]
+                     specs=[[{"type":"pie"}, {"type":"pie"}]],
+                     horizontal_spacing=0.08)
+# Couleurs vélos : orange / violet / or — distincts de member (bleu) et casual (vert)
+colors_pie = ["#FF8C42", "#6C63FF", "#F7C948"]
 for i, user_type in enumerate(["member", "casual"], 1):
     sub = bikes[bikes["member_casual"] == user_type].reset_index(drop=True)
     fig5.add_trace(go.Pie(
@@ -177,12 +179,18 @@ for i, user_type in enumerate(["member", "casual"], 1):
         values=list(sub["total_rides"]),
         name=user_type.capitalize(),
         marker_colors=colors_pie,
-        hole=0.45,
-        textinfo="percent+label",
+        hole=0.42,
+        textinfo="percent",
+        textposition="outside",
+        automargin=True,
+        textfont=dict(size=12),
         hovertemplate="%{label}<br>%{value:,} trajets (%{percent})<extra></extra>"
     ), row=1, col=i)
 fig5 = styled_fig(fig5, "Types de vélos utilisés")
-fig5.update_layout(showlegend=True)
+fig5.update_layout(
+    showlegend=True,
+    height=420,
+)
 
 # Fig 6 — Top 10 stations casual (cible marketing)
 fig6 = go.Figure(go.Bar(
