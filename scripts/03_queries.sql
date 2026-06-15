@@ -5,14 +5,17 @@
 -- ============================================================
 
 -- ── 1. Vue d'ensemble : nombre total de trajets par type ─────────────────────
+-- Compatibilité : PERCENTILE_CONT = PostgreSQL / BigQuery / SQL Server / DuckDB
+--                 Remplacer par MEDIAN() pour SQLite ou MySQL 8.0+
 SELECT
     member_casual,
-    COUNT(*)                        AS total_rides,
-    ROUND(AVG(ride_length), 2)      AS avg_ride_length_min,
-    ROUND(MEDIAN(ride_length), 2)   AS median_ride_length_min,
-    ROUND(MAX(ride_length), 2)      AS max_ride_length_min,
-    ROUND(MIN(ride_length), 2)      AS min_ride_length_min,
-    ROUND(STDDEV(ride_length), 2)   AS std_ride_length_min
+    COUNT(*)                                                        AS total_rides,
+    ROUND(AVG(ride_length), 2)                                      AS avg_ride_length_min,
+    ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP
+          (ORDER BY ride_length), 2)                                AS median_ride_length_min,
+    ROUND(MAX(ride_length), 2)                                      AS max_ride_length_min,
+    ROUND(MIN(ride_length), 2)                                      AS min_ride_length_min,
+    ROUND(STDDEV(ride_length), 2)                                   AS std_ride_length_min
 FROM cyclistic_clean
 GROUP BY member_casual
 ORDER BY member_casual;
