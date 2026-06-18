@@ -1,4 +1,4 @@
-"""
+﻿"""
 export_pdf.py — Rapport professionnel Cyclistic (.pdf) avec figures embarquées
 Génère un PDF complet équivalent au rapport DOCX, via ReportLab.
 """
@@ -13,6 +13,20 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
     PageBreak, HRFlowable, Image, KeepTogether
 )
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# ── Enregistrement police Unicode (DejaVuSans) ────────────────────────────────
+import matplotlib
+_FONT_DIR = os.path.join(os.path.dirname(matplotlib.__file__), 'mpl-data', 'fonts', 'ttf')
+pdfmetrics.registerFont(TTFont('DejaVu',        os.path.join(_FONT_DIR, 'DejaVuSans.ttf')))
+pdfmetrics.registerFont(TTFont('DejaVu-Bold',   os.path.join(_FONT_DIR, 'DejaVuSans-Bold.ttf')))
+pdfmetrics.registerFont(TTFont('DejaVu-Italic', os.path.join(_FONT_DIR, 'DejaVuSans-Oblique.ttf')))
+pdfmetrics.registerFontFamily('DejaVu', normal='DejaVu', bold='DejaVu-Bold', italic='DejaVu-Italic')
+
+FONT_NORM = 'DejaVu'
+FONT_BOLD = 'DejaVu-Bold'
+FONT_ITAL = 'DejaVu-Italic'
 
 BASE_DIR = r"C:\Users\Republic Of Computer\Desktop\Cyclistic_Project"
 FIG_DIR  = os.path.join(BASE_DIR, "figures")
@@ -42,15 +56,31 @@ def sty(name, parent='Normal', **kw):
         setattr(s, k, v)
     return s
 
-S_BODY   = sty('body',   fontSize=10, leading=15, textColor=C_DARK, spaceAfter=6)
-S_BODY_J = sty('bodyj',  fontSize=10, leading=15, textColor=C_DARK, spaceAfter=6, alignment=TA_JUSTIFY)
-S_H1     = sty('h1',     fontSize=16, leading=20, textColor=C_BLUE, spaceBefore=12, spaceAfter=4, fontName='Helvetica-Bold')
-S_H2     = sty('h2',     fontSize=12, leading=16, textColor=C_DARK, spaceBefore=8,  spaceAfter=4, fontName='Helvetica-Bold')
-S_CAPTION= sty('cap',    fontSize=8,  leading=11, textColor=C_GRAY, spaceAfter=8,   alignment=TA_CENTER, fontName='Helvetica-Oblique')
-S_BULLET = sty('bul',    fontSize=10, leading=15, textColor=C_DARK, spaceAfter=3,   leftIndent=16, bulletIndent=4)
+S_BODY   = sty('body',   fontSize=10, leading=15, textColor=C_DARK, spaceAfter=6,  fontName='DejaVu')
+S_BODY_J = sty('bodyj',  fontSize=10, leading=15, textColor=C_DARK, spaceAfter=6,  fontName='DejaVu', alignment=TA_JUSTIFY)
+S_H1     = sty('h1',     fontSize=16, leading=20, textColor=C_BLUE, spaceBefore=12, spaceAfter=4, fontName='DejaVu-Bold')
+S_H2     = sty('h2',     fontSize=12, leading=16, textColor=C_DARK, spaceBefore=8,  spaceAfter=4, fontName='DejaVu-Bold')
+S_CAPTION= sty('cap',    fontSize=8,  leading=11, textColor=C_GRAY, spaceAfter=8,   alignment=TA_CENTER, fontName='DejaVu-Italic')
+S_BULLET = sty('bul',    fontSize=10, leading=15, textColor=C_DARK, spaceAfter=3,   leftIndent=16, bulletIndent=4, fontName='DejaVu')
 S_CODE   = sty('code',   fontSize=7.5,leading=10, textColor=C_DARK, fontName='Courier', spaceAfter=6, leftIndent=14, backColor=colors.HexColor('#F8F9FA'))
-S_SMALL  = sty('small',  fontSize=8,  leading=11, textColor=C_GRAY)
-S_CENTER = sty('center', fontSize=10, leading=15, textColor=C_DARK, alignment=TA_CENTER)
+S_SMALL  = sty('small',  fontSize=8,  leading=11, textColor=C_GRAY, fontName='DejaVu')
+S_CENTER = sty('center', fontSize=10, leading=15, textColor=C_DARK, alignment=TA_CENTER, fontName='DejaVu')
+
+def clean(text):
+    """Remplace les caractères Unicode non supportés par des équivalents ASCII/Latin."""
+    if not isinstance(text, str):
+        return text
+    return (text
+        .replace(' ', ' ')   # espace insécable → espace normale
+        .replace(' ', ' ')   # espace fine insécable → espace normale
+        .replace(' ', ' ')   # espace fine → espace normale
+        .replace('’', "'")   # apostrophe typographique → apostrophe
+        .replace('‘', "'")
+        .replace('“', '"')   # guillemets typographiques
+        .replace('”', '"')
+        .replace('«', '<<')  # guillemets français
+        .replace('»', '>>')
+    )
 
 def hr(color=C_BLUE, thickness=1.5):
     return HRFlowable(width='100%', thickness=thickness, color=color, spaceAfter=6, spaceBefore=2)
@@ -59,16 +89,16 @@ def sp(n=4):
     return Spacer(1, n)
 
 def h1_flow(num, title):
-    return [Paragraph(f'<b><font color="#1A73E8">{num}</font>  {title}</b>', S_H1), hr()]
+    return [Paragraph(f'<b><font color="#1A73E8">{clean(num)}</font>  {clean(title)}</b>', S_H1), hr()]
 
 def h2_flow(lbl, title):
-    return [Paragraph(f'<b>{lbl}{"  " if lbl else ""}{title}</b>', S_H2)]
+    return [Paragraph(f'<b>{clean(lbl)}{"  " if lbl else ""}{clean(title)}</b>', S_H2)]
 
 def body_p(text, justify=False):
-    return Paragraph(text, S_BODY_J if justify else S_BODY)
+    return Paragraph(clean(text), S_BODY_J if justify else S_BODY)
 
 def bullet_p(text):
-    return Paragraph(f'•  {text}', S_BULLET)
+    return Paragraph(f'•  {clean(text)}', S_BULLET)
 
 def figure_flow(fname, fig_num, caption, width=14*cm):
     path = os.path.join(FIG_DIR, fname)
@@ -82,11 +112,12 @@ def figure_flow(fname, fig_num, caption, width=14*cm):
     return items
 
 def tbl_style(col_widths, data, hdr_bg=C_BLUE):
+    data = [[clean(c) if isinstance(c, str) else c for c in row] for row in data]
     t = Table(data, colWidths=col_widths)
     t.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), hdr_bg),
         ('TEXTCOLOR',  (0,0), (-1,0), C_WHITE),
-        ('FONTNAME',   (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME',   (0,0), (-1,0), 'DejaVu-Bold'),
         ('FONTSIZE',   (0,0), (-1,0), 9),
         ('FONTSIZE',   (0,1), (-1,-1), 9),
         ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#DADCE0')),
@@ -134,7 +165,7 @@ def on_page(canvas, doc):
     if doc.page == 1:
         canvas.restoreState()
         return
-    canvas.setFont('Helvetica', 8)
+    canvas.setFont('DejaVu', 8)
     canvas.setFillColor(C_GRAY)
     canvas.drawString(cm*2.5, cm*1.2,
         'Cyclistic Bike-Share  |  Sidi Mohamed ALLY  |  Google Data Analytics Certificate')
@@ -157,7 +188,7 @@ doc = SimpleDocTemplate(
 story = []
 
 # ─── PAGE DE GARDE ──────────────────────────────────────────────────────────
-S_TITLE  = sty('title',  fontSize=26, leading=32, textColor=C_WHITE, fontName='Helvetica-Bold', alignment=TA_CENTER)
+S_TITLE  = sty('title',  fontSize=26, leading=32, textColor=C_WHITE, fontName='DejaVu-Bold', alignment=TA_CENTER)
 S_SUBT   = sty('subt',   fontSize=11, leading=16, textColor=colors.HexColor('#C5D9FD'), alignment=TA_CENTER)
 
 band = Table([[Paragraph('CYCLISTIC BIKE-SHARE', S_TITLE)],
@@ -171,22 +202,22 @@ band.setStyle(TableStyle([
 story += [band, sp(16)]
 story += [
     Paragraph("Rapport d'Analyse — Case Study",
-        sty('cov_big', fontSize=16, fontName='Helvetica-Bold', textColor=C_DARK, alignment=TA_CENTER)),
+        sty('cov_big', fontSize=16, fontName='DejaVu-Bold', textColor=C_DARK, alignment=TA_CENTER)),
     sp(6),
     Paragraph(
         "« Comment les membres annuels et les casual riders<br/>"
         "utilisent-ils les vélos Cyclistic différemment ? »",
-        sty('coverq', fontSize=12, leading=18, textColor=C_GRAY, fontName='Helvetica-Oblique', alignment=TA_CENTER)),
+        sty('coverq', fontSize=12, leading=18, textColor=C_GRAY, fontName='DejaVu-Italic', alignment=TA_CENTER)),
     sp(16),
 ]
 
 kpi = Table(
-    [['3 885 439','64,6 %','35,4 %','14,6 min','37,1 min'],
+    [['3 885 439','64,6 %','35,4 %','14,6 min','37,1 min'],
      ['Trajets analysés','Part Members','Part Casual','Durée moy. Member','Durée moy. Casual']],
     colWidths=[3.3*cm]*5)
 kpi.setStyle(TableStyle([
     ('BACKGROUND',(0,0),(-1,0),C_BLUE_L), ('BACKGROUND',(0,1),(-1,1),C_LGRAY),
-    ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'), ('FONTSIZE',(0,0),(-1,0),13),
+    ('FONTNAME',(0,0),(-1,0),'DejaVu-Bold'), ('FONTSIZE',(0,0),(-1,0),13),
     ('TEXTCOLOR',(0,0),(-1,0),C_BLUE),
     ('FONTSIZE',(0,1),(-1,1),8), ('TEXTCOLOR',(0,1),(-1,1),C_GRAY),
     ('ALIGN',(0,0),(-1,-1),'CENTER'),
@@ -206,8 +237,8 @@ info_data = [
 ]
 info_tbl = Table(info_data, colWidths=[3.8*cm, 12.7*cm])
 info_tbl.setStyle(TableStyle([
-    ('FONTNAME',(0,0),(0,-1),'Helvetica-Bold'), ('FONTSIZE',(0,0),(-1,-1),9),
-    ('FONTSIZE',(0,0),(1,0),11), ('FONTNAME',(1,0),(1,0),'Helvetica-Bold'),
+    ('FONTNAME',(0,0),(0,-1),'DejaVu-Bold'), ('FONTSIZE',(0,0),(-1,-1),9),
+    ('FONTSIZE',(0,0),(1,0),11), ('FONTNAME',(1,0),(1,0),'DejaVu-Bold'),
     ('TEXTCOLOR',(0,0),(0,-1),C_BLUE),
     ('ROWBACKGROUNDS',(0,0),(-1,-1),[C_LGRAY, colors.white]),
     ('TOPPADDING',(0,0),(-1,-1),5), ('BOTTOMPADDING',(0,0),(-1,-1),5),
@@ -232,21 +263,21 @@ story.append(PageBreak())
 story += [Paragraph('<b><font color="#1A73E8">RÉSUMÉ EXÉCUTIF</font></b>', S_H1), hr(), sp(4)]
 story.append(body_p(
     "Cyclistic, programme de bike-share de Chicago, dispose de deux profils d'utilisateurs aux "
-    "comportements opposés : les membres annuels (64,6 %) utilisent le service pour leurs "
-    "déplacements domicile-travail, tandis que les casual riders (35,4 %) ont un usage récréatif "
-    "et saisonnier. L'objectif stratégique est de convertir une partie des 1,37 million de casual "
+    "comportements opposés : les membres annuels (64,6 %) utilisent le service pour leurs "
+    "déplacements domicile-travail, tandis que les casual riders (35,4 %) ont un usage récréatif "
+    "et saisonnier. L'objectif stratégique est de convertir une partie des 1,37 million de casual "
     "riders en membres annuels, jugés plus rentables.", True))
 story.append(sp(8))
 
 story += colored_box_flow('CONSTATS CLÉS', C_BLUE_L, [
-    (None, "Les casual riders roulent 2,5× plus longtemps (37,1 min vs 14,6 min) mais 2× moins souvent."),
+    (None, "Les casual riders roulent 2,5× plus longtemps (37,1 min vs 14,6 min) mais 2× moins souvent."),
     (None, "Double pic horaire membres à 8h et 17h (rush hours) vs pic unique casual à 15–17h."),
-    (None, "51,5 % des trajets casual en été (juin–août) → fenêtre de conversion prioritaire."),
+    (None, "51,5 % des trajets casual en été (juin–août) → fenêtre de conversion prioritaire."),
     (None, "Casual concentrés sur des stations touristiques (Lakefront, Navy Pier, Millennium Park)."),
 ], C_BLUE)
 story += colored_box_flow('TOP 3 RECOMMANDATIONS', C_GREEN_L, [
-    ("1", "Campagne géolocalisée « Week-end → Abonnement » autour des stations touristiques."),
-    ("2", "Offre « Été → Membre » : 2 mois offerts en mai–juin aux casual ayant 3+ trajets en 30 jours."),
+    ("1", "Campagne géolocalisée « Week-end → Abonnement » autour des stations touristiques."),
+    ("2", "Offre « Été → Membre » : 2 mois offerts en mai–juin aux casual ayant 3+ trajets en 30 jours."),
     ("3", "Calculateur d'économies « domicile-travail » dans l'app pour démontrer la valeur de l'abonnement."),
 ], C_GREEN)
 story.append(PageBreak())
@@ -258,7 +289,7 @@ toc_entries = [
     ("2.", "Sources de données &amp; Méthodologie", False),
     ("3.", "Nettoyage des données", False),
     ("4.", "Analyse &amp; Insights", False),
-    ("   4.1", "Vue d'ensemble : volume et durée", True),
+    ("   4.1", "Vue d'ensemble : volume et durée", True),
     ("   4.2", "Comportement temporel", True),
     ("   4.3", "Types de vélos", True),
     ("   4.4", "Stations de départ — Casual riders", True),
@@ -277,26 +308,26 @@ for num, title, sub in toc_entries:
     story.append(Paragraph(f'<font color="{color}"><b>{num}</b></font>  {title}', s))
 
 story += [sp(12), Paragraph('<b><font color="#1A73E8">LISTE DES FIGURES</font></b>',
-    sty('lfh', fontSize=12, leading=16, fontName='Helvetica-Bold', textColor=C_BLUE, spaceAfter=4))]
+    sty('lfh', fontSize=12, leading=16, fontName='DejaVu-Bold', textColor=C_BLUE, spaceAfter=4))]
 story.append(hr(colors.HexColor('#E8EAED'), 0.8))
 story.append(tbl_style([1.4*cm, 6.8*cm, 5.1*cm, 2*cm], [
     ['N°', 'Titre', 'Fichier', 'Section'],
-    ['Fig. 1', 'Nombre total de trajets',               '01_rides_count.png',       '4.1'],
-    ['Fig. 2', 'Durée moyenne des trajets',          '02_avg_ride_length.png',   '4.1'],
-    ['Fig. 3', 'Trajets par jour de la semaine',        '03_rides_by_dow.png',      '4.2'],
-    ['Fig. 4', 'Évolution mensuelle des trajets',   '04_rides_by_month.png',    '4.2'],
-    ['Fig. 5', 'Trajets par heure de départ',       '07_rides_by_hour.png',     '4.2'],
-    ['Fig. 6', 'Durée moyenne par jour de la sem.', '08_avg_length_by_dow.png', '4.2'],
-    ['Fig. 7', 'Types de vélos utilisés',       '05_bike_types.png',        '4.3'],
-    ['Fig. 8', 'Top 10 stations — Casual riders',   '06_top10_stations.png',    '4.4'],
+    ['Fig. 1', 'Nombre total de trajets',               '01_rides_count.png',       '4.1'],
+    ['Fig. 2', 'Durée moyenne des trajets',          '02_avg_ride_length.png',   '4.1'],
+    ['Fig. 3', 'Trajets par jour de la semaine',        '03_rides_by_dow.png',      '4.2'],
+    ['Fig. 4', 'Évolution mensuelle des trajets',   '04_rides_by_month.png',    '4.2'],
+    ['Fig. 5', 'Trajets par heure de départ',       '07_rides_by_hour.png',     '4.2'],
+    ['Fig. 6', 'Durée moyenne par jour de la sem.', '08_avg_length_by_dow.png', '4.2'],
+    ['Fig. 7', 'Types de vélos utilisés',       '05_bike_types.png',        '4.3'],
+    ['Fig. 8', 'Top 10 stations — Casual riders',   '06_top10_stations.png',    '4.4'],
 ]))
 story.append(PageBreak())
 
 # ─── SECTION 1 ───────────────────────────────────────────────────────────────
 story += h1_flow("1.", "Contexte &amp; Problématique Business")
 story.append(body_p(
-    "Cyclistic est un programme de bike-share basé à Chicago comptant plus de 5 800 vélos "
-    "géolocalisés répartis sur 692 stations. Les analystes financiers ont établi que les membres "
+    "Cyclistic est un programme de bike-share basé à Chicago comptant plus de 5 800 vélos "
+    "géolocalisés répartis sur 692 stations. Les analystes financiers ont établi que les membres "
     "annuels génèrent une rentabilité significativement supérieure. L'objectif stratégique : "
     "maximiser la conversion des casual riders existants.", True))
 story += h2_flow("1.2", "Parties prenantes")
@@ -312,17 +343,17 @@ story.append(PageBreak())
 story += h1_flow("2.", "Sources de données &amp; Méthodologie")
 story.append(tbl_style([7.5*cm, 4.5*cm, 4.5*cm], [
     ['Fichier', 'Période', 'Lignes brutes'],
-    ['Divvy_Trips_2019_Q1.csv', 'Janv.–Mars 2019', '365 069'],
-    ['Divvy_Trips_2020_Q1.csv', 'Janv.–Mars 2020', '426 887'],
-    ['202004 → 202012-divvy-tripdata.csv', 'Avr.–Déc. 2020', '3 114 796'],
-    ['TOTAL', 'Jan 2019 – Déc 2020', '3 906 752'],
+    ['Divvy_Trips_2019_Q1.csv', 'Janv.–Mars 2019', '365 069'],
+    ['Divvy_Trips_2020_Q1.csv', 'Janv.–Mars 2020', '426 887'],
+    ['202004 → 202012-divvy-tripdata.csv', 'Avr.–Déc. 2020', '3 114 796'],
+    ['TOTAL', 'Jan 2019 – Déc 2020', '3 906 752'],
 ]))
 story.append(tbl_style([3*cm, 1.5*cm, 12*cm], [
     ['Critère', 'Statut', 'Détail'],
     ['Reliable', '✅', 'Données opérationnelles capteurs automatiques'],
-    ['Original', '✅', 'Source primaire : Motivate International Inc.'],
+    ['Original', '✅', 'Source primaire : Motivate International Inc.'],
     ['Comprehensive', '✅', 'Tous les trajets sur la période, aucun échantillonnage'],
-    ['Current', '⚠️', 'Données 2019–2020 : solides pour tendances, actualisation recommandée'],
+    ['Current', '⚠️', 'Données 2019–2020 : solides pour tendances, actualisation recommandée'],
     ['Cited', '✅', 'Divvy Data License Agreement — usage public autorisé'],
 ]))
 story.append(PageBreak())
@@ -338,24 +369,24 @@ story.append(tbl_style([4*cm, 7*cm, 5.5*cm], [
     ['Doublons', 'Suppression sur ride_id', 'Dédoublonnage'],
     ['ride_length ≤ 0', 'Suppression (erreurs système)', 'Données invalides'],
     ['ride_length > 1440', 'Suppression (vélos non retournés)', 'Outliers extrêmes'],
-    ['Stations maintenance', 'HQ QR, TEST, DIVVY exclus', 'Trajets internes'],
-    ['Résultat final', '3 906 752 → 3 885 439 trajets propres', '−21 313 (−0,5 %)'],
+    ['Stations maintenance', 'HQ QR, TEST, DIVVY exclus', 'Trajets internes'],
+    ['Résultat final', '3 906 752 → 3 885 439 trajets propres', '−21 313 (−0,5 %)'],
 ]))
 story.append(PageBreak())
 
 # ─── SECTION 4 ───────────────────────────────────────────────────────────────
 story += h1_flow("4.", "Analyse &amp; Insights")
 
-story += h2_flow("4.1", "Vue d'ensemble : volume et durée")
+story += h2_flow("4.1", "Vue d'ensemble : volume et durée")
 story.append(body_p(
-    "Sur 3 885 439 trajets analysés, les membres représentent 64,6 % du volume mais effectuent "
+    "Sur 3 885 439 trajets analysés, les membres représentent 64,6 % du volume mais effectuent "
     "des déplacements 2,5× plus courts que les casual riders.", True))
 story.append(tbl_style([5*cm, 3.5*cm, 3.5*cm, 4.5*cm], [
     ['Métrique', 'Members', 'Casual riders', 'Ratio'],
-    ['Nombre de trajets', '2 508 757', '1 376 682', 'Members × 1,8'],
-    ['Part du total', '64,6 %', '35,4 %', '—'],
-    ['Durée moyenne', '14,6 min', '37,1 min', 'Casual × 2,5'],
-    ['Durée médiane', '10,6 min', '21,7 min', 'Casual × 2,0'],
+    ['Nombre de trajets', '2 508 757', '1 376 682', 'Members × 1,8'],
+    ['Part du total', '64,6 %', '35,4 %', '—'],
+    ['Durée moyenne', '14,6 min', '37,1 min', 'Casual × 2,5'],
+    ['Durée médiane', '10,6 min', '21,7 min', 'Casual × 2,0'],
     ['Jour de pointe', 'Jeudi', 'Samedi', '—'],
     ['Usage principal', 'Domicile ↔ Travail', 'Loisirs / Tourisme', '—'],
 ]))
@@ -373,8 +404,8 @@ if side_row:
     t2.setStyle(TableStyle([('ALIGN',(0,0),(-1,-1),'CENTER'),('VALIGN',(0,0),(-1,-1),'MIDDLE')]))
     story.append(t2)
     story.append(Paragraph(
-        'Fig. 1 — Nombre de trajets  (01_rides_count.png)         '
-        'Fig. 2 — Durée moyenne  (02_avg_ride_length.png)', S_CAPTION))
+        'Fig. 1 — Nombre de trajets  (01_rides_count.png)         '
+        'Fig. 2 — Durée moyenne  (02_avg_ride_length.png)', S_CAPTION))
 story += insight_flow(
     "Les casual riders effectuent 2,5× plus de minutes de vélo par trajet que les membres. "
     "Ce n'est pas un usage utilitaire — c'est un comportement récréatif ou touristique structurel.")
@@ -382,14 +413,14 @@ story += insight_flow(
 story += h2_flow("4.2", "Comportement temporel")
 for lbl, items in [
     ("Par jour de la semaine", [
-        "Members : pic le jeudi (~391k trajets), volume stable lundi–vendredi → usage domicile-travail.",
-        "Casual : pic le samedi (~318k trajets), profil en cloche autour du week-end → usage loisir."]),
+        "Members : pic le jeudi (~391k trajets), volume stable lundi–vendredi → usage domicile-travail.",
+        "Casual : pic le samedi (~318k trajets), profil en cloche autour du week-end → usage loisir."]),
     ("Par mois / saison", [
-        "Casual hyper-saisonniers : 51,5 % de leurs trajets annuels en été vs 32 % pour les membres.",
-        "Hiver : membres actifs (556k) vs casual quasi-absents (57k)."]),
+        "Casual hyper-saisonniers : 51,5 % de leurs trajets annuels en été vs 32 % pour les membres.",
+        "Hiver : membres actifs (556k) vs casual quasi-absents (57k)."]),
     ("Par heure de départ", [
-        "Members : double pic à 8h et 17h → trajets domicile-travail confirmés.",
-        "Casual : montée progressive dès 10h, pic unique à 15–17h → loisir."]),
+        "Members : double pic à 8h et 17h → trajets domicile-travail confirmés.",
+        "Casual : montée progressive dès 10h, pic unique à 15–17h → loisir."]),
 ]:
     story += h2_flow("", lbl)
     for item in items:
@@ -405,17 +436,17 @@ story += insight_flow(
 
 story += h2_flow("4.3", "Types de vélos utilisés")
 story.append(body_p(
-    "Les docked bikes dominent pour les deux types (>83 %). Les casual riders utilisent "
-    "proportionnellement plus d'electric bikes (15,2 % vs 11,8 % pour les membres)."))
+    "Les docked bikes dominent pour les deux types (>83 %). Les casual riders utilisent "
+    "proportionnellement plus d'electric bikes (15,2 % vs 11,8 % pour les membres)."))
 story += figure_flow('05_bike_types.png', '7', "Types de vélos utilisés — % par catégorie d'utilisateur")
 story += insight_flow(
-    "La préférence casual pour l'electric bike (15,2 %) ouvre une piste de communication "
+    "La préférence casual pour l'electric bike (15,2 %) ouvre une piste de communication "
     "sur le confort et la polyvalence.")
 
 story += h2_flow("4.4", "Stations de départ — Casual riders")
 story.append(body_p(
     "Les 10 stations les plus fréquentées par les casual riders sont toutes situées dans des "
-    "zones touristiques : Lakefront Trail, Navy Pier, Millennium Park, Shedd Aquarium.", True))
+    "zones touristiques : Lakefront Trail, Navy Pier, Millennium Park, Shedd Aquarium.", True))
 story += figure_flow('06_top10_stations.png', '8', 'Top 10 stations de départ — Casual riders', width=15*cm)
 story += insight_flow(
     "Les 10 stations prioritaires sont toutes concentrées sur le Lakefront de Chicago "
@@ -426,21 +457,21 @@ story.append(PageBreak())
 story += h1_flow("5.", "Recommandations Marketing")
 story += colored_box_flow("RECOMMANDATION 1 — Campagne géolocalisée", C_BLUE_L, [
     ("Insight",  "Les casual se concentrent le week-end sur des stations touristiques identifiables."),
-    ("Action",   "Publicités dans un rayon de 500 m autour des 10 stations casual, vendredi soir et samedi matin."),
-    ("Message",  "« Tu roules déjà le week-end — économise avec l'abonnement annuel. »"),
+    ("Action",   "Publicités dans un rayon de 500 m autour des 10 stations casual, vendredi soir et samedi matin."),
+    ("Message",  "« Tu roules déjà le week-end — économise avec l'abonnement annuel. »"),
     ("Canaux",   "Instagram/TikTok géolocalisés · notifications push in-app · affichage en station."),
     ("Impact",   "Conversion des casual récurrents du week-end au moment de leur usage maximal."),
 ], C_BLUE)
 story += colored_box_flow("RECOMMANDATION 2 — Offre Été → Membre", C_GREEN_L, [
-    ("Insight", "51,5 % des trajets casual en été → fenêtre de conversion optimale."),
-    ("Action",  "En mai–juin : 2 premiers mois offerts aux casual ayant 3+ trajets en 30 jours."),
-    ("Message", "« Tu as utilisé Cyclistic X fois ce mois-ci — tu aurais économisé Y€ avec un abonnement. »"),
+    ("Insight", "51,5 % des trajets casual en été → fenêtre de conversion optimale."),
+    ("Action",  "En mai–juin : 2 premiers mois offerts aux casual ayant 3+ trajets en 30 jours."),
+    ("Message", "« Tu as utilisé Cyclistic X fois ce mois-ci — tu aurais économisé Y€ avec un abonnement. »"),
     ("Canaux",  "Email ciblé · notification push in-app · bannières dans l'app."),
     ("Impact",  "Conversion pendant le pic d'usage, avant l'inactivité automne/hiver."),
 ], C_GREEN)
 story += colored_box_flow("RECOMMANDATION 3 — Calculateur d'économies", C_AMB_L, [
     ("Insight", "Les membres utilisent les vélos aux heures de rush (8h, 17h). Les casual ignorent peut-être cet usage."),
-    ("Action",  "Calculateur dans l'app : « Si tu fais X trajets/semaine, l'abonnement te coûte Y€/trajet. »"),
+    ("Action",  "Calculateur dans l'app : « Si tu fais X trajets/semaine, l'abonnement te coûte Y€/trajet. »"),
     ("Canaux",  "Content marketing · affichage stations aux heures de rush."),
 ], C_AMBER)
 story += h2_flow("5.4", "Matrice de priorisation")
@@ -455,7 +486,7 @@ story.append(PageBreak())
 # ─── SECTION 6 ───────────────────────────────────────────────────────────────
 story += h1_flow("6.", "Conclusion &amp; Limites")
 story.append(body_p(
-    "Cette analyse de 3 885 439 trajets (2019–2020) établit une distinction comportementale nette "
+    "Cette analyse de 3 885 439 trajets (2019–2020) établit une distinction comportementale nette "
     "entre membres et casual riders. La convergence de trois signaux temporels (week-end, après-midi, "
     "été) et d'un signal géographique (Lakefront) offre un cadre de ciblage marketing très précis.", True))
 for lim in [
@@ -472,11 +503,11 @@ story += [Paragraph('<b><font color="#1A73E8">RÉALISÉ PAR</font></b>', S_H1), 
 badge_cell2 = [Image(BADGE, width=3.8*cm, height=3.8*cm)] if os.path.exists(BADGE) else [Paragraph('', S_SMALL)]
 info_cell2 = [
     Paragraph('<b>Sidi Mohamed ALLY</b>',
-        sty('sn', fontSize=16, fontName='Helvetica-Bold', textColor=C_DARK, leading=22)),
+        sty('sn', fontSize=16, fontName='DejaVu-Bold', textColor=C_DARK, leading=22)),
     Paragraph('<i>Analyste de données Professionnel Certifié</i>',
-        sty('st', fontSize=11, textColor=C_GRAY, leading=16, fontName='Helvetica-Oblique')),
+        sty('st', fontSize=11, textColor=C_GRAY, leading=16, fontName='DejaVu-Italic')),
     Paragraph('<b>Google Data Analytics Professional Certificate</b>',
-        sty('sc', fontSize=10, textColor=C_BLUE, leading=15, fontName='Helvetica-Bold')),
+        sty('sc', fontSize=10, textColor=C_BLUE, leading=15, fontName='DejaVu-Bold')),
     Paragraph('Certifié le 13 juin 2026  ·  Délivré par Google &amp; Coursera', S_SMALL),
     Paragraph(f'Badge vérifiable : <link href="{CREDLY}" color="#1A73E8"><u>{CREDLY}</u></link>', S_SMALL),
 ]
@@ -496,7 +527,7 @@ story.append(tbl_style([3.5*cm, 13*cm], [
     ['KPI', "Key Performance Indicator — indicateur clé permettant de mesurer l'atteinte d'un objectif."],
     ['Member', "Utilisateur Cyclistic détenteur d'un abonnement annuel."],
     ['PII', "Personally Identifiable Information — données permettant d'identifier une personne."],
-    ['ROCCC', "Cadre d'évaluation : Reliable, Original, Comprehensive, Current, Cited."],
+    ['ROCCC', "Cadre d'évaluation : Reliable, Original, Comprehensive, Current, Cited."],
     ['Rush hours', "Heures de pointe des transports (7h–9h et 16h–18h)."],
     ['SQL', "Structured Query Language — langage de requête pour les bases de données relationnelles."],
 ]))
@@ -519,7 +550,7 @@ for block in re.split(r'\n(?=-- ──)', sql_raw):
     if title_l:
         story.append(Paragraph(
             f'<b>{title_l.replace("--","").strip()}</b>',
-            sty(f'sqlt{len(story)}', fontSize=9, fontName='Helvetica-Bold',
+            sty(f'sqlt{len(story)}', fontSize=9, fontName='DejaVu-Bold',
                 textColor=C_BLUE, spaceAfter=2, spaceBefore=10)))
     story.append(Paragraph(
         block.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;'), S_CODE))
@@ -564,7 +595,7 @@ top10_casual = (df[(df["start_station_name"].notna()) &
 ]
 for title, code in snippets:
     story.append(Paragraph(f'<b>{title}</b>',
-        sty(f'pyt{len(story)}', fontSize=9, fontName='Helvetica-Bold',
+        sty(f'pyt{len(story)}', fontSize=9, fontName='DejaVu-Bold',
             textColor=C_BLUE, spaceAfter=2, spaceBefore=10)))
     story.append(Paragraph(
         code.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;'), S_CODE))
@@ -577,8 +608,8 @@ story.append(tbl_style([3.5*cm, 13*cm], [
     ['Source',   'Divvy Trip Data — Motivate International Inc.'],
     ['Licence',  'Divvy Data License Agreement — usage public autorisé'],
     ['Période',  'Janvier 2019 – Décembre 2020 (11 fichiers CSV)'],
-    ['Volume',   '3 906 752 trajets bruts → 3 885 439 après nettoyage'],
-    ['Anonymat', 'Aucune PII — données 100 % anonymisées'],
+    ['Volume',   '3 906 752 trajets bruts → 3 885 439 après nettoyage'],
+    ['Anonymat', 'Aucune PII — données 100 % anonymisées'],
     ['Note',     "Cyclistic est une entreprise fictive (Capstone Case Study 1, Google DA Certificate). "
                  "Les données Divvy sont réelles et adaptées à des fins pédagogiques."],
 ]))
