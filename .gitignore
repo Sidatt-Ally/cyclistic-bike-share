@@ -1,7 +1,13 @@
-# Données brutes (trop volumineuses pour GitHub)
+# Données brutes (trop volumineuses pour GitHub — voir Kaggle)
 data/raw/
 data/processed/*.csv
 data/processed/*.xlsx
+
+# Outputs régénérables via les scripts
+outputs/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
 
 # Config outils internes (non projet)
 .claude/

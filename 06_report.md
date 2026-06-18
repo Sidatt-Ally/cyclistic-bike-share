@@ -1,7 +1,7 @@
 # Cyclistic Bike-Share — Rapport d'Analyse
 ## Comment les membres annuels et les riders occasionnels utilisent-ils les vélos différemment ?
 
-**Auteur :** Junior Data Analyst — Cyclistic Marketing Analytics Team
+**Auteur :** Sidi Mohamed ALLY — Analyste de données Professionnel Certifié (Google)
 **Date :** Juin 2026
 **Destinataire :** Lily Moreno, Director of Marketing
 

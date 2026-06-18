@@ -123,23 +123,27 @@ Les casual riders se concentrent sur les **stations touristiques** (Lakefront, N
 ```
 Cyclistic_Project/
 ├── data/
-│   ├── raw/                    # 11 CSV Divvy (non versionnés — trop volumineux)
+│   ├── raw/                    # 11 CSV Divvy (non versionnés — voir Kaggle)
 │   ├── processed/              # Données nettoyées (non versionnées)
 │   ├── 01_data_description.md  # Documentation des sources
 │   └── 02_cleaning_log.md      # Log du nettoyage
 ├── scripts/
 │   ├── 02_cleaning.py          # Nettoyage + consolidation (pandas)
 │   ├── 03_analysis.py          # Analyse descriptive
-│   ├── 03_queries.sql          # 12 requêtes SQL (CTEs, window functions)
 │   ├── 04_visualizations.py    # 8 graphiques matplotlib/seaborn
+│   ├── 04_load_postgres.py     # Chargement PostgreSQL (3 tables)
 │   ├── 05_dashboard.py         # Dashboard interactif Plotly
 │   ├── 06_tableau_export.py    # Export CSV pour Tableau
-│   ├── export_pdf.py           # Génération PDF (reportlab)
-│   └── export_docx.py          # Génération Word (python-docx)
+│   ├── export_docx.py          # Rapport Word (python-docx)
+│   ├── export_pdf.py           # Rapport PDF (ReportLab)
+│   └── export_pptx.py          # Présentation PowerPoint (python-pptx)
+├── notebooks/
+│   ├── 01_sql_practice.ipynb   # Pratique SQL via psycopg2
+│   ├── 02_cleaning_practice.ipynb  # Nettoyage SQL vs Python
+│   └── 03_python_practice.ipynb    # Analyse pandas depuis PostgreSQL
 ├── figures/                    # 8 graphiques PNG
-├── 05_dashboard.html           # Dashboard interactif (ouvrir dans un navigateur)
-├── 06_report.pdf               # Rapport complet PDF
-├── 06_report.docx              # Rapport complet Word
+├── outputs/                    # Rapport DOCX, PDF, PPTX (non versionnés)
+├── 05_dashboard.html           # Dashboard interactif Plotly
 └── 07_tableau_guide.md         # Guide Tableau Desktop
 ```
 
@@ -165,7 +169,31 @@ Volume : 3 906 752 trajets bruts → **3 885 439 trajets après nettoyage**
 
 ---
 
+## Notebooks de pratique
+
+| Notebook | Contenu |
+|---|---|
+| `notebooks/01_sql_practice.ipynb` | 12 requêtes SQL via psycopg2 — GROUP BY, CTEs, window functions |
+| `notebooks/02_cleaning_practice.ipynb` | Nettoyage comparé SQL vs Python (VIEW + pandas) |
+| `notebooks/03_python_practice.ipynb` | Analyse complète depuis PostgreSQL avec matplotlib/seaborn |
+
+---
+
+## Livrables
+
+| Fichier | Description |
+|---|---|
+| `outputs/Cyclistic_Report.docx` | Rapport complet Word (python-docx) |
+| `outputs/Cyclistic_Report.pdf` | Rapport complet PDF (ReportLab) |
+| `outputs/Cyclistic_Presentation.pptx` | Présentation 12 slides avec notes d'orateur |
+| `05_dashboard.html` | Dashboard interactif Plotly (ouvrir dans le navigateur) |
+
+---
+
 ## Auteur
 
-**Junior Data Analyst** — Google Data Analytics Certificate  
+**Sidi Mohamed ALLY**  
+Analyste de données — Google Data Analytics Professional Certificate  
+[GitHub](https://github.com/Sidatt-Ally) · sidatt6969@gmail.com
+
 Projet réalisé dans le cadre du Capstone Case Study 1 (Cyclistic)
