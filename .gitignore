@@ -10,7 +10,7 @@ outputs/
 .ipynb_checkpoints/
 
 # Config outils internes (non projet)
-.claude/
+.tools/
 
 # Fichiers temporaires Python
 __pycache__/
